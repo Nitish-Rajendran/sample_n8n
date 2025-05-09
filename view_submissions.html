@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Form Submissions</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background-color: #f7fafc;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background-color: #1e50ff;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f7fafc;
+        }
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 1rem;
+            background-color: #1e50ff;
+            color: white;
+        }
+        .btn:hover {
+            background-color: #0035cc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-success {
+            background-color: #38a169;
+        }
+        .btn-success:hover {
+            background-color: #2f855a;
+        }
+        .btn-danger {
+            background-color: #e53e3e;
+        }
+        .btn-danger:hover {
+            background-color: #c53030;
+        }
+        .message-cell {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Contact Form Submissions</h1>
+        
+        <div class="actions">
+            <div class="btn-group">
+                <button id="exportJsonBtn" class="btn">Export to JSON</button>
+                <button id="exportExcelBtn" class="btn btn-success">Export to Excel</button>
+            </div>
+            <button id="clearBtn" class="btn btn-danger">Clear All Submissions</button>
+        </div>
+        
+        <div id="submissionsContainer">
+            <!-- Submissions will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const submissionsContainer = document.getElementById('submissionsContainer');
+            const exportJsonBtn = document.getElementById('exportJsonBtn');
+            const exportExcelBtn = document.getElementById('exportExcelBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            
+            // Load submissions from localStorage
+            function loadSubmissions() {
+                const submissionsData = localStorage.getItem('contactSubmissions');
+                if (submissionsData) {
+                    return JSON.parse(submissionsData);
+                }
+                return [];
+            }
+            
+            // Display submissions in a table
+            function displaySubmissions() {
+                const submissions = loadSubmissions();
+                
+                if (submissions.length === 0) {
+                    submissionsContainer.innerHTML = '<div class="no-data">No submissions found</div>';
+                    return;
+                }
+                
+                let tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                submissions.forEach(submission => {
+                    tableHTML += `
+                        <tr>
+                            <td>${submission.date}</td>
+                            <td>${submission.name}</td>
+                            <td>${submission.email}</td>
+                            <td>${submission.phone}</td>
+                            <td class="message-cell" title="${submission.message}">${submission.message}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                        </tbody>
+                    </table>
+                `;
+                
+                submissionsContainer.innerHTML = tableHTML;
+            }
+            
+            // Export submissions to JSON file
+            exportJsonBtn.addEventListener('click', function() {
+                const submissions = loadSubmissions();
+                const dataStr = JSON.stringify(submissions, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = 'contact_submissions.json';
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            });
+            
+            // Export submissions to Excel file
+            exportExcelBtn.addEventListener('click', function() {
+                const submissions = loadSubmissions();
+                
+                if (submissions.length === 0) {
+                    alert('No data to export');
+                    return;
+                }
+                
+                // Create CSV content
+                let csvContent = 'Date,Name,Email,Phone,Message\n';
+                
+                submissions.forEach(submission => {
+                    // Escape quotes in fields and wrap fields with quotes to handle commas in content
+                    const date = `"${submission.date.replace(/"/g, '""')}"`;
+                    const name = `"${submission.name.replace(/"/g, '""')}"`;
+                    const email = `"${submission.email.replace(/"/g, '""')}"`;
+                    const phone = `"${submission.phone.replace(/"/g, '""')}"`;
+                    const message = `"${submission.message.replace(/"/g, '""')}"`;
+                    
+                    csvContent += `${date},${name},${email},${phone},${message}\n`;
+                });
+                
+                // Create a Blob with the CSV content
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                
+                // Create a download link
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'contact_submissions.csv');  // Changed extension to .csv
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+            
+            // Clear all submissions
+            clearBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear all submissions? This cannot be undone.')) {
+                    localStorage.removeItem('contactSubmissions');
+                    displaySubmissions();
+                }
+            });
+            
+            // Initial display
+            displaySubmissions();
+        });
+    </script>
+</body>
+</html>
